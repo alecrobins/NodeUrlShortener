@@ -5,62 +5,71 @@ var ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".
 
 module.exports.redirectUrl = function(req, res){  //request and response
 
-	var shortedUrl = req.params.id;
-
+	var shortenUrl = req.params.id;
 	//TODO: record anayltics for the user associated with that extension
 
 	req.getConnection(function(err,connection){
 
+		var usrId = base62ToId(shortenUrl); //convert the passed id
+
 		// search for
-		connection.query('SELECT * FROM url WHERE id = ?',[1],function(err,rows)     {
+		connection.query('SELECT * FROM url WHERE id = ?', [usrId], function(err,rows)     {
 
 			if(err)
 				console.log("Error Selecting : %s ",err );
 
-			console.log("REDIRECT SUCCESS");
-			console.log(rows[0]);
-				//res.render('customers',{page_title:"Customers - Node.js",data:rows});
+			if(rows[0] != null){
+				var realUrl = rows[0].realUrl; // get the real url
+				res.redirect(301, "http://" + realUrl);
+			}
+			else {
+					//TODO: need to handle urls that don't exist by passing to a 404
+					console.log("404: YOU DON'T EXIST");
+					res.redirect('/');
+			}
 
-			var realUrl = rows[0].realUrl; // get the real url
-			res.redirect(301, realUrl);
+		}); // end of function
 
-			});
-
-	});
+	}); // end of query
 
 };
 
 module.exports.shortenUrl = function(req, res){
 
 	var userRealUrl = req.body.realUrl; // real url submited by user
-	var shortenedUrl = shortenUrl(userRealUrl); // shorten the url
-
 	//TODO: formal the url properly with http://
-
-	var data = {
-
-		realUrl    : userRealUrl,
-		shortUrl : "a", // a for now
-
-	};
-
 
 	req.getConnection(function(err,connection){
 
-		// url table: id, realUrl, shortUrl, custom, customUrl
-		connection.query('INSERT INTO url set ?', data,function(err,rows)
-		{
+		//get the last id added
+		connection.query('SELECT id FROM url ORDER BY id DESC LIMIT 1', function(err,rows){
 
-			if (err)
-				console.log("Error inserting : %s ",err );
+			var lastId = rows[0].id + 1; // one past the last inserted url
+			var shortenedUrl = idToBase62(lastId).toString();
 
-			res.redirect('/');
 
-			});
+			// data that will be saved
+			var data = {
+				realUrl    : userRealUrl,
+				shortUrl 	 : shortenedUrl,
+			};
+
+				// add the new url to the db
+				// url table: id, realUrl, shortUrl, custom, customUrl
+				connection.query('INSERT INTO url set ?', data,function(err,rows)
+				{
+
+					if (err)
+						console.log("Error inserting : %s ",err );
+
+						//TODO: redirect to success page
+						res.redirect('/');
+
+				});
+
+		});
 
 	});
-
-	//TODO: save the shortenedUrl -> realUrl in the db (key -> pair)
 
 	//TODO: respond with a success if url successfully converted with the
 	//			matching shortenedUrl -> realUrl pair
@@ -69,30 +78,46 @@ module.exports.shortenUrl = function(req, res){
 
 
 // convert the last id into base62
-function shortenUrl (url)
+function idToBase62 (id)
 {
-
-	var num = count;
-	var id = "";
+	console.log("ID: " + id);
+	var num = id; //TODO: set to one past the last element added
+	var ext = "";
 
 	if (num == 0){
-		id = ALPHABET[0];
+		ext = ALPHABET[0];
 	}
 	else{
 		while(num > 0)
 			{
 				var base = parseInt( num / ALPHABET.length ); // make sure int
 				var rem = num % ALPHABET.length;
-				id = ALPHABET[rem] + id; // remainder alligns with base
+				ext = ALPHABET[rem] + ext; // remainder alligns with base
 				num = base; // reassign num
 			}
 	}
 
-	count += 1; //increment global count
+	return ext;
+}
+
+// convert from base 62 into an id
+function base62ToId (baseNum)
+{
+	// convert base62 to base10 : k9b = 10*62^2 + 61*62^1 + 1*62^ 0
+	var exponent = baseNum.length - 1;
+	var stringNum = baseNum;
+
+	var id = 0;
+
+	while(exponent >= 0)
+	{
+		var num = parseInt( ALPHABET.indexOf(stringNum[0])); //get the num equivalent
+		id += num * Math.pow(62,exponent); // 62 ^ exponent
+
+		exponent -= 1;
+		stringNum = stringNum.substring(1); //remove first character
+	}
 
 	return id;
 
-	//TODO: find the avaiable shortest extenstion
-	//TODO: increment the overall variable tracking the number to convert
-	//TODO: return the shortenedURL
 }
