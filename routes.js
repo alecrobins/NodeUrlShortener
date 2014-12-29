@@ -23,9 +23,8 @@ module.exports.redirectUrl = function(req, res){  //request and response
 				res.redirect(301, "http://" + realUrl);
 			}
 			else {
-					//TODO: need to handle urls that don't exist by passing to a 404
-					console.log("404: YOU DON'T EXIST");
-					res.redirect('/');
+				// url doesn't exist
+					res.render("404.ejs");
 			}
 
 		}); // end of function
@@ -36,7 +35,7 @@ module.exports.redirectUrl = function(req, res){  //request and response
 
 module.exports.shortenUrl = function(req, res){
 
-	var userRealUrl = req.body.realUrl; // real url submited by user
+	var userRealUrl = formatUrl( req.body.realUrl ); // real url submited by user
 	//TODO: formal the url properly with http://
 
 	req.getConnection(function(err,connection){
@@ -76,6 +75,9 @@ module.exports.shortenUrl = function(req, res){
 
 };
 
+module.exports.success = function(req, res){
+	res.send("Success!");
+}
 
 // convert the last id into base62
 function idToBase62 (id)
