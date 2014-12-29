@@ -1,7 +1,6 @@
 {
   "name": "NodeUrlShortner",
   "version": "1.0.0",
-  "description": "",
   "main": "app.js",
   "dependencies": {
     "express": "^4.10.6",
@@ -12,5 +11,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alecrobins/NodeUrlShortener.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alecrobins/NodeUrlShortener/issues"
+  },
+  "homepage": "https://github.com/alecrobins/NodeUrlShortener"
 }
